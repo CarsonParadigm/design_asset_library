@@ -77,7 +77,8 @@ try {
         if ($path === '/admin/filters' && !$isPost)                    { admin_filters_index(); }
         if ($path === '/admin/filters/group/save' && $isPost)          { admin_group_save(); }
         if (route('/admin/filters/group/{id}/delete', $path, $p) && $isPost)    { admin_group_delete((int) $p['id']); }
-        if ($path === '/admin/filters/category/save' && $isPost)       { admin_category_save(); }
+        if ($path === '/admin/filters/category/save' && $isPost)        { admin_category_save(); }
+        if ($path === '/admin/filters/category/reorder' && $isPost)     { admin_category_reorder(); }
         if (route('/admin/filters/category/{id}/delete', $path, $p) && $isPost) { admin_category_delete((int) $p['id']); }
     }
 

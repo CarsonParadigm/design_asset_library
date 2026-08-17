@@ -224,6 +224,33 @@ function admin_category_save(): never
     redirect(url('/admin/filters'));
 }
 
+/**
+ * Save a new category order after a drag.
+ *
+ * Answers JSON rather than redirecting: the page has already moved the row, so a full reload
+ * would only make the change feel slower than it was.
+ */
+function admin_category_reorder(): never
+{
+    csrf_check();
+
+    $groupId = (int) ($_POST['group_id'] ?? 0);
+    $ids     = (array) ($_POST['ids'] ?? []);
+
+    if ($groupId <= 0 || !$ids) {
+        json_out(['ok' => false, 'error' => 'Missing group or order.'], 400);
+    }
+
+    try {
+        $updated = category_reorder($groupId, $ids);
+    } catch (Throwable $e) {
+        error_log('asset-library: category reorder failed: ' . $e->getMessage());
+        json_out(['ok' => false, 'error' => 'The new order could not be saved.'], 500);
+    }
+
+    json_out(['ok' => true, 'updated' => $updated]);
+}
+
 function admin_category_delete(int $id): never
 {
     csrf_check();

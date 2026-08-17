@@ -112,6 +112,40 @@ function category_delete(int $id): void
     $st->execute([$id]);
 }
 
+/**
+ * Persist a drag-and-drop reordering.
+ *
+ * Scoped to one group: the id list is filtered by group_id so a tampered payload can only
+ * ever shuffle categories the user was already looking at, never move one between groups.
+ *
+ * @param list<int> $orderedIds category ids in their new display order
+ */
+function category_reorder(int $groupId, array $orderedIds): int
+{
+    $ids = array_values(array_filter(array_map('intval', $orderedIds)));
+    if (!$ids) {
+        return 0;
+    }
+
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $st = $pdo->prepare(
+            'UPDATE filter_categories SET sort_order = ? WHERE id = ? AND group_id = ?'
+        );
+        $n = 0;
+        foreach ($ids as $i => $id) {
+            $st->execute([$i, $id, $groupId]);
+            $n += $st->rowCount();
+        }
+        $pdo->commit();
+        return $n;
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
+
 /* ── Assets ───────────────────────────────────────────────────────────────────────────── */
 
 /**

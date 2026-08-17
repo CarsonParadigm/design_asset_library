@@ -96,14 +96,36 @@ function csrf_field(): string
     return '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">';
 }
 
-/** Verify the token on every state-changing request; abort the request if it doesn't match. */
+/**
+ * Verify the token on every state-changing request; abort the request if it doesn't match.
+ *
+ * Note the explicit empty checks: hash_equals('', '') is true, so without them a request that
+ * sent no token would be accepted whenever the session had not yet issued one.
+ *
+ * Responds 403 rather than the 419 ("page expired") some frameworks use — Apache does not
+ * recognise 419 and rewrites it to a 500, which reads as a server fault instead of a rejected
+ * request.
+ */
 function csrf_check(): void
 {
-    $sent = $_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!is_string($sent) || !hash_equals($_SESSION['csrf'] ?? '', $sent)) {
-        http_response_code(419);
-        exit('Your session expired. Go back, reload the page and try again.');
+    $expected = $_SESSION['csrf'] ?? '';
+    $sent     = $_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+
+    if (is_string($sent) && $sent !== '' && is_string($expected) && $expected !== ''
+        && hash_equals($expected, $sent)) {
+        return;
     }
+
+    $message = 'Your session expired. Go back, reload the page and try again.';
+
+    // Answer in the format the caller asked for, so a fetch() sees a parseable error rather
+    // than an HTML page that blows up its .json() call.
+    if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')) {
+        json_out(['ok' => false, 'error' => $message], 403);
+    }
+
+    http_response_code(403);
+    exit($message);
 }
 
 /* ── Rich text ────────────────────────────────────────────────────────────────────────── */
