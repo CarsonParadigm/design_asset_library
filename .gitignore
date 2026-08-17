@@ -1,3 +1,11 @@
 config.php
 .env
-data/
+
+# Uploaded assets live in a separate rw volume mounted over data/uploads (see the quadlet
+# unit). The directory itself MUST stay in git: /var/www/html is bind-mounted read-only, so
+# Podman cannot create the mountpoint — it has to already exist in the checked-out tree or
+# the container fails to start. Track the skeleton, ignore everything that lands in it.
+data/*
+!data/uploads/
+data/uploads/*
+!data/uploads/.gitkeep
