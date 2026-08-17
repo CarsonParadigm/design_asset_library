@@ -1,0 +1,39 @@
+# Asset Library — Apache config.
+#
+# nginx proxies design.poh-apps.com/asset-library/ with a trailing slash on proxy_pass, which
+# STRIPS the prefix: a request for /asset-library/admin/assets arrives here as /admin/assets.
+# So every rule below is written against the un-prefixed path, while links generated in PHP go
+# through url() in src/helpers.php to add the prefix back for the browser.
+
+# Internal tool — never index.
+<IfModule mod_headers.c>
+    Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Uploaded files are served straight off disk by Apache (they are real files, so the
+    # front-controller rule below never sees them). Belt and braces: refuse to hand back
+    # anything script-like from the upload volume even if one somehow got written there.
+    # Uploads are re-encoded through GD on the way in, which already rules out polyglots.
+    RewriteRule ^data/.*\.(php|phtml|phps|phar|cgi|pl|py|sh|htaccess)$ - [F,NC]
+
+    # Front controller: anything that is not a real file or directory goes to index.php.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Don't let anyone browse the upload tree or the source directories.
+Options -Indexes
+
+# Long cache for fingerprinted static assets; uploads are content-addressed by uuid so they
+# are safe to cache hard too — a replaced image gets a new uuid, never the same URL.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png  "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+</IfModule>
