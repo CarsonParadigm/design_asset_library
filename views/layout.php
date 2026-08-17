@@ -22,7 +22,7 @@ function layout_start(string $pageTitle, string $bodyClass = '', array $opts = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/x-icon" href="<?= e(url('/assets/img/favicon.ico')) ?>">
-    <title><?= e($pageTitle) ?> — POH Asset Library</title>
+    <title><?= e($pageTitle) ?> — Paradigm Oral Health</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php if ($useQuill): ?>
     <link rel="stylesheet" href="<?= e(url('/vendor/quill/quill.snow.css')) ?>">

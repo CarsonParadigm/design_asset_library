@@ -89,11 +89,20 @@ function db(): PDO
 }
 
 // Sessions back the CSRF token. /tmp is writable in the container; the code mount is not.
+//
+// The Secure flag tracks the real scheme rather than being hard-coded: nginx terminates TLS
+// and forwards X-Forwarded-Proto, so this is "on" in production — but hard-coding it would
+// make the cookie undeliverable over plain HTTP against the container directly, which is how
+// the app is smoke-tested before it is behind the edge.
+$isHttps = ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+    || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
+        // Scoped to this app so the sibling apps on design.poh-apps.com never receive it.
         'path'     => BASE_PATH ?: '/',
         'httponly' => true,
-        'secure'   => true,
+        'secure'   => $isHttps,
         'samesite' => 'Lax',
     ]);
     session_name('asset_library');
