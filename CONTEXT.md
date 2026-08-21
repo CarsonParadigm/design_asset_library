@@ -22,6 +22,13 @@ addresses in `ADMIN_EMAILS` (`src/auth.php`) — currently Carson only.
   trailing slash on `proxy_pass` **strips the prefix**, so PHP sees `/…`; every browser-facing URL
   goes through `url()` in `src/helpers.php`, which adds it back. `client_max_body_size 64m` there
   must stay in step with `post_max_size` in the Containerfile.
+- **oauth2 auth subrequest body limit (bit us 2026-08-21).** Raising `client_max_body_size` on the
+  app's location is *not enough*: nginx also size-checks the `auth_request` subrequest against
+  `location = /oauth2/auth` in `snippets/o365-auth-enabled.conf`, which inherited the 1m default.
+  Any upload over 1 MB made that subrequest fail 413 → `auth request unexpected status` → a 500
+  emitted mid-upload, which browsers show as a request that never finishes. That snippet now sets
+  `client_max_body_size 0` (safe — `proxy_pass_request_body off` means the body never reaches
+  oauth2-proxy). The fix is server-wide; the wiki had the same latent bug above 1 MB.
 - **Uploads volume:** `apps/asset-library-data/uploads` → `/var/www/html/data/uploads` (rw). Host dir
   is owned by **uid/gid 165568** (rootless Podman's mapping of the container's `www-data`); do **not**
   add `:U` to the mount. `data/uploads/` is tracked (with a `.gitkeep`) because Podman cannot create
@@ -37,6 +44,11 @@ addresses in `ADMIN_EMAILS` (`src/auth.php`) — currently Carson only.
   auth, schema, repo and the two controllers; `views/` holds the templates.
 - **Schema** is created and migrated in `src/schema.php` on request (cheap version check). Add a new
   numbered step; never edit an applied one.
+- **PHP error display is off, logging on** (set in the Containerfile). The stock base image ships
+  the development defaults, which both leak warnings into the page and break error handling: a
+  startup warning prints before any app code runs, flushing the headers and pinning the response
+  to 200, so a rejected request reports as a success. Other apps on this host still run the stock
+  defaults.
 - **Images** are re-encoded through GD on upload — that drops EXIF and any embedded payload, so a
   polyglot file cannot survive. Two derivatives per image: display (≤2400px) and thumb (≤600px).
 - **Image storage is pluggable** (`ImageStore` in `src/images.php`): `local` (default) writes to the

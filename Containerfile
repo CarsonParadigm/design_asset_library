@@ -48,9 +48,21 @@ RUN set -eux; \
 # KEEP IN STEP with client_max_body_size in the nginx location block for /asset-library/
 # and with MAX_UPLOAD_BYTES in src/images.php (which reports a friendly error well before
 # PHP would silently truncate the POST).
+#
+# The error settings matter as much as the limits. The stock image runs with
+# display_errors=On and log_errors=Off — a development configuration — so PHP warnings
+# render into the page for whoever triggered them (leaking file paths) while nothing reaches
+# the log. It also breaks error handling outright: a startup warning is emitted before any
+# application code runs, which flushes the headers and pins the response to 200, so a
+# rejected request is reported to the browser as a success. Errors go to the log, never to
+# the user.
 RUN { \
       echo 'upload_max_filesize = 5M'; \
       echo 'post_max_size = 64M'; \
       echo 'max_file_uploads = 24'; \
       echo 'memory_limit = 256M'; \
+      echo 'display_errors = Off'; \
+      echo 'display_startup_errors = Off'; \
+      echo 'log_errors = On'; \
+      echo 'error_reporting = E_ALL'; \
     } > /usr/local/etc/php/conf.d/zz-asset-library.ini

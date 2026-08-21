@@ -116,4 +116,32 @@ if (!poh_is_authenticated()) {
     exit('Not authenticated.');
 }
 
+/**
+ * Catch a POST that PHP silently discarded for exceeding post_max_size.
+ *
+ * When the body is too big PHP empties $_POST and $_FILES but still runs the request, so the
+ * next thing to fail is the CSRF check — which would tell the user their session expired and
+ * send them off clearing cookies instead of shrinking their upload.
+ */
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && empty($_POST) && empty($_FILES)
+    && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0
+) {
+    $limit = ini_get('post_max_size');
+    error_log(sprintf(
+        'asset-library: POST to %s discarded — %s bytes exceeds post_max_size=%s',
+        $_SERVER['REQUEST_URI'] ?? '?', $_SERVER['CONTENT_LENGTH'], $limit
+    ));
+    // The full status line, not http_response_code(): when PHP has discarded an oversized
+    // body, mod_php does not reliably carry the bare code through and the response goes out
+    // as 200 — a failure reported as success.
+    header(($_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1') . ' 413 Payload Too Large', true, 413);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Connection: close');
+    exit(
+        "That upload was too large to accept (the limit is {$limit} for the whole form).\n\n"
+        . "Go back, remove or shrink some images, and save again. Each image can be up to 5 MB."
+    );
+}
+
 schema_migrate();
