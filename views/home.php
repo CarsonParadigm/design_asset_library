@@ -40,7 +40,7 @@ layout_start($pageTitle, '', ['mainClass' => 'library']);
         <?php if (!$taxonomy): ?>
             <p class="filters-empty">
                 No filter groups yet.
-                <?php if (is_admin()): ?>
+                <?php if (effective_admin()): ?>
                     <a href="<?= e(url('/admin/filters')) ?>">Create the first one</a> to let people narrow the library.
                 <?php endif; ?>
             </p>

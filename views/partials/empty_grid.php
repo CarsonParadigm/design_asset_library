@@ -24,7 +24,7 @@ declare(strict_types=1);
         <a class="btn btn-secondary" href="<?= e(url('/')) ?>">Clear filters</a>
     <?php else: ?>
         <h3>The library is empty</h3>
-        <?php if (is_admin()): ?>
+        <?php if (effective_admin()): ?>
             <p>Add your first asset — give it a title, a featured image, and the buttons people
                should click, then assign it to categories so it can be found.</p>
             <a class="btn btn-primary" href="<?= e(url('/admin/assets/new')) ?>">Add the first asset</a>

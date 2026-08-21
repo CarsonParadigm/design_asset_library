@@ -26,6 +26,10 @@ if (!function_exists('poh_user_email') && is_file('/opt/poh/identity.php')) {
  */
 const ADMIN_EMAILS = [
     'carson.bennett@paradigmoralhealth.com',
+    'natalie.radbill@paradigmoralhealth.com',
+    'sammi.meyers@paradigmoralhealth.com',
+    'bridget.fuessel@paradigmoralhealth.com',
+    'alanna.warren@paradigmoralhealth.com',
 ];
 
 function current_email(): string
@@ -76,6 +80,16 @@ if (!function_exists('poh_is_authenticated')) {
     }
 }
 
+/**
+ * Session key holding the "view as user" preference.
+ *
+ * Deliberately session-scoped rather than persisted: previewing the non-admin view is a
+ * momentary check, and it should never outlive the browser session and quietly leave someone
+ * wondering where their admin controls went.
+ */
+const VIEW_AS_USER_KEY = 'view_as_user';
+
+/** Is the signed-in person on the admin allowlist? Ignores the view-as-user preview. */
 function is_admin(): bool
 {
     $email = strtolower(trim(current_email()));
@@ -90,10 +104,42 @@ function is_admin(): bool
     return false;
 }
 
+/** Is an admin currently previewing the library as an ordinary employee? */
+function viewing_as_user(): bool
+{
+    return is_admin() && !empty($_SESSION[VIEW_AS_USER_KEY]);
+}
+
+/**
+ * Does the current request get admin treatment?
+ *
+ * This is the check every UI and authorisation decision should use — is_admin() answers "who
+ * are you", this answers "what should you see right now". While previewing, an admin is
+ * treated exactly like an ordinary employee, including being refused /admin, so the preview
+ * reflects reality instead of approximating it.
+ */
+function effective_admin(): bool
+{
+    return is_admin() && !viewing_as_user();
+}
+
+/** Turn the preview on or off. Only a real admin can do either. */
+function set_view_as_user(bool $on): void
+{
+    if (!is_admin()) {
+        return;
+    }
+    if ($on) {
+        $_SESSION[VIEW_AS_USER_KEY] = true;
+    } else {
+        unset($_SESSION[VIEW_AS_USER_KEY]);
+    }
+}
+
 /** Guard for every /admin route. Renders a plain 403 rather than redirecting into a loop. */
 function require_admin(): void
 {
-    if (is_admin()) {
+    if (effective_admin()) {
         return;
     }
     http_response_code(403);

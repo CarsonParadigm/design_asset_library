@@ -55,6 +55,38 @@ try {
         api_asset($p['slug']);
     }
 
+    /**
+     * Toggle the "view as user" preview.
+     *
+     * Deliberately outside the /admin gate: turning the preview ON makes require_admin() start
+     * refusing, so a route under /admin could be entered but never left.
+     */
+    if ($path === '/view-as' && $isPost) {
+        csrf_check();
+        if (!is_admin()) {
+            http_response_code(403);
+            exit('Not permitted.');
+        }
+        $toUser = ($_POST['mode'] ?? '') === 'user';
+        set_view_as_user($toUser);
+
+        // Only ever return to a path inside this app, and never back into /admin while the
+        // preview is on — that would land on a 403 immediately after enabling it.
+        $raw   = (string) ($_POST['return'] ?? '/');
+        $parts = parse_url($raw);
+        $return = '/';
+        if ($parts !== false
+            && empty($parts['host']) && empty($parts['scheme'])   // reject absolute URLs outright
+            && !str_starts_with($raw, '//')                       // and protocol-relative ones
+        ) {
+            $candidate = '/' . ltrim($parts['path'] ?? '/', '/');
+            if (!str_starts_with($candidate, '/admin')) {
+                $return = $candidate;
+            }
+        }
+        redirect(url($return));
+    }
+
     /* ── Admin ────────────────────────────────────────────────────────────────────────── */
 
     if (str_starts_with($path, '/admin')) {

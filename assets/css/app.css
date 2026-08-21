@@ -77,6 +77,42 @@ a { color: var(--navy); }
     background: rgba(255,255,255,0.08);
 }
 
+/* ── VIEW-AS-USER PREVIEW ───────────────────────────────────────────────── */
+
+.view-as-form { display: flex; margin: 0; }
+.view-as-toggle {
+    background: none; font-family: inherit; cursor: pointer;
+    /* .back-link supplies the rest; these override the <button> defaults. */
+}
+.view-as-toggle.is-active {
+    background: var(--gold); border-color: var(--gold); color: #fff;
+}
+.view-as-toggle.is-active:hover { background: var(--gold-light); border-color: var(--gold-light); }
+
+.preview-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+    background: #fdf4e6;
+    border-bottom: 1px solid #ecd9b6;
+    color: #7a5a22;
+    font-size: 13px; line-height: 1.45;
+    padding: 9px 20px;
+    text-align: center;
+}
+.preview-bar code {
+    background: #f6e8cd; padding: 1px 5px; border-radius: 3px; font-size: 12.5px;
+}
+.preview-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0;
+}
+.preview-bar-form { margin: 0; }
+.preview-bar-exit {
+    background: var(--gold); color: #fff; border: none; border-radius: 5px;
+    font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+    padding: 5px 12px; cursor: pointer;
+}
+.preview-bar-exit:hover { background: var(--gold-light); }
+
 /* ── LAYOUT ─────────────────────────────────────────────────────────────── */
 
 main { flex: 1; width: 100%; }
