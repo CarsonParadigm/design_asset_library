@@ -7,8 +7,8 @@
  */
 declare(strict_types=1);
 
-const APP_VERSION     = 'v0.1.0';
-const APP_RELEASED_AT = '2026-08-17T22:30:00+00:00';
+const APP_VERSION     = 'v1.0.0';
+const APP_RELEASED_AT = '2026-08-21T19:55:00+00:00';
 
 /** Footer string, e.g. "v0.1.0 · released Aug 17, 2026 10:30 PM UTC". */
 function app_version_line(): string

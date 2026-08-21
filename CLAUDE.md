@@ -50,6 +50,81 @@ sudo -u poh-svc -H git -C /home/poh-svc/apps/asset-library push origin main
 
 Newest entries at the top.
 
+### 2026-08-21 — v1.0.0: soft launch
+
+Tagged `v1.0.0`; footer bumped to match (`src/version.php`).
+
+**Filters page — categories reworked** (`96b6652`)
+- Drag a row by its grip handle to reorder; the new order saves on drop via a JSON endpoint
+  rather than waiting for a save. Arrow keys on a focused handle do the same.
+- The per-row sort-order number input is gone — position is expressed by dragging, and new
+  categories append to the end.
+- Save is a check icon, disabled until the name actually differs from what loaded. Delete is
+  a trash icon at the far right, posting to its own form via the `form` attribute (forms
+  cannot nest inside the row form).
+- `category_reorder()` scopes its UPDATE to the group being dragged, so a tampered payload
+  cannot move a category between groups.
+- Fixed two things found while testing: `csrf_check()` answered **419**, which Apache does not
+  recognise and rewrites to a 500, so a rejected request looked like a server fault (now 403);
+  and `hash_equals('', '')` is true, so a request sending no token was accepted whenever the
+  session had not yet issued one.
+
+**Four more admins, plus a "View as user" toggle** (`9e9c4b9`)
+- Natalie Radbill, Sammi Meyers, Bridget Fuessel and Alanna Warren joined `ADMIN_EMAILS`.
+- The old single admin check is now two: `is_admin()` (who you are) and `effective_admin()`
+  (what you should see right now). Every UI and authorisation decision asks the latter, so a
+  previewing admin is genuinely refused `/admin` rather than just having buttons hidden.
+- The toggle is gated on `is_admin()`, and `/view-as` is routed **outside** the `/admin` gate —
+  otherwise enabling the preview would make the way out unreachable.
+- The `return` parameter is untrusted: absolute and protocol-relative URLs are refused, and
+  anything under `/admin` falls back to the library root.
+
+**Bug: saving an asset hung the browser** (`f9698e7`) — reported by Bridget
+- Not the app. nginx size-checks the oauth2 `auth_request` subrequest against
+  `location = /oauth2/auth`, which had no `client_max_body_size` and so inherited the **1m**
+  default. Bridget's 3.7 MB form made that subrequest fail 413 → `auth request unexpected
+  status` → nginx emitted a 500 mid-upload, which the browser shows as a request that never
+  finishes. The app's own 64m limit never came into it.
+- Fixed host-side in `snippets/o365-auth-enabled.conf` (backed up first) with
+  `client_max_body_size 0` on the auth location — safe, because `proxy_pass_request_body off`
+  means the body never reaches oauth2-proxy. **Server-wide fix: the wiki had the same latent
+  bug above 1 MB.**
+- Also: PHP was running the base image's development defaults (`display_errors=On`,
+  `log_errors=Off`), leaking warnings into pages while logging nothing — and a startup warning
+  prints before app code runs, flushing headers and pinning the response to 200, so a rejected
+  request reported as success. Now logged, never displayed.
+- Also: a POST over `post_max_size` leaves `$_POST` empty, so the CSRF check told the user
+  their session had expired — sending them to clear cookies, exactly what Bridget tried. Now
+  detected and answered 413 naming the real limit.
+
+**Error reporting for the soft launch** (`3d9d73b`)
+- `src/errors.php`, installed before the DB or session so a failure in either still reports.
+  Every error is logged with a short reference (`AL-XXXXXX`) shown on screen too, so a user's
+  screenshot can be found in the log. Renders HTML or JSON to match the request.
+- Non-fatal PHP notices are collected into a panel at the foot of the page.
+- `APP_DEBUG=1` in `.env` shows the real reason to every user during the soft launch; with it
+  off, admins still get full detail and others get the reference. **Turn this off once the
+  launch settles.**
+- `assets/js/errors.js` (loaded first) catches uncaught errors and rejected promises, shows a
+  dismissible banner naming the actual failure, and POSTs it to `/api/client-error` so
+  browser-side failures reach the container log. Deduped, capped at 20 per page.
+- Fixed a bug the tests caught in the oversized-POST guard: it keyed on an empty `$_POST`, but
+  PHP only fills that for form content types, so every JSON request looked oversized.
+
+**Sample content**
+- Three sample assets (Practice Opening Announcement, Provider Introduction, Referral Program
+  Poster) using a recreated "EXAMPLE" stamp image — the pasted original could not be written to
+  disk, so it was redrawn with GD using the host's DejaVu font. Each body says it is placeholder
+  content. Delete freely.
+
+**Still open**
+- `IMAGE_STORE` remains `local`. Carson chose Bunny.net with public URLs; switching needs
+  `BUNNY_STORAGE_ZONE`, `BUNNY_STORAGE_KEY`, `BUNNY_STORAGE_HOST` and `BUNNY_PULL_ZONE_HOST`.
+  Note the switch is **not retroactive** — existing images would need copying to Bunny first,
+  since the DB stores relative paths the backend turns into URLs at render time.
+- Other apps on this host still run the stock `display_errors=On`.
+- No pagination; no drag-to-reorder for gallery images.
+
 ### 2026-08-17 — v0.1.0: the asset library itself
 
 First real release. Tagged `v0.1.0`; the footer names the tag and its release timestamp
