@@ -28,7 +28,10 @@ function layout_start(string $pageTitle, string $bodyClass = '', array $opts = [
     <link rel="stylesheet" href="<?= e(url('/vendor/quill/quill.snow.css')) ?>">
     <?php endif; ?>
     <link rel="stylesheet" href="<?= e(url('/assets/css/app.css')) ?>?v=<?= e(APP_VERSION) ?>">
+    <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
     <script>window.AL_BASE = <?= json_encode(BASE_PATH) ?>;</script>
+    <!-- First, so it can catch failures in every script that follows. -->
+    <script src="<?= e(url('/assets/js/errors.js')) ?>?v=<?= e(APP_VERSION) ?>"></script>
 </head>
 <body class="<?= e($bodyClass) ?>">
 
@@ -101,6 +104,8 @@ function layout_end(): void
 {
     ?>
 </main>
+
+<?php render_notice_panel(); ?>
 
 <footer>
     <span>&copy; <?= date('Y') ?> Paradigm Oral Health &mdash; Internal Use Only</span>

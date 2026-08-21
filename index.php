@@ -56,6 +56,29 @@ try {
     }
 
     /**
+     * Receive a JavaScript error from the browser.
+     *
+     * Front-end failures are otherwise invisible — they happen on someone else's machine and
+     * never reach the server. During the soft launch they go into the same log as everything
+     * else, so a report of "it just did nothing" has evidence behind it.
+     */
+    if ($path === '/api/client-error' && $isPost) {
+        csrf_check();
+        $payload = json_decode(file_get_contents('php://input') ?: '[]', true) ?: [];
+        error_log(sprintf(
+            'asset-library[client] %s | %s | at %s:%s:%s | page %s | %s',
+            substr((string) ($payload['kind'] ?? 'error'), 0, 40),
+            substr((string) ($payload['message'] ?? ''), 0, 500),
+            substr((string) ($payload['source'] ?? '?'), 0, 200),
+            (int) ($payload['line'] ?? 0),
+            (int) ($payload['column'] ?? 0),
+            substr((string) ($payload['page'] ?? ''), 0, 200),
+            substr((string) ($payload['agent'] ?? ''), 0, 160)
+        ));
+        json_out(['ok' => true]);
+    }
+
+    /**
      * Toggle the "view as user" preview.
      *
      * Deliberately outside the /admin gate: turning the preview ON makes require_admin() start
@@ -120,9 +143,7 @@ try {
     $pageTitle = 'Not found';
     require APP_ROOT . '/views/404.php';
 } catch (Throwable $e) {
-    // Log the detail; show the user something calm and non-technical.
-    error_log('asset-library: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
-    http_response_code(500);
-    $pageTitle = 'Something went wrong';
-    require APP_ROOT . '/views/500.php';
+    // One reporter for everything: it logs the full detail with a reference code and renders
+    // either HTML or JSON, at the detail level the viewer is entitled to.
+    render_error($e);
 }

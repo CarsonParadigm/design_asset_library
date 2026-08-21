@@ -44,11 +44,22 @@ addresses in `ADMIN_EMAILS` (`src/auth.php`) — currently Carson only.
   auth, schema, repo and the two controllers; `views/` holds the templates.
 - **Schema** is created and migrated in `src/schema.php` on request (cheap version check). Add a new
   numbered step; never edit an applied one.
+- **Error reporting** lives in `src/errors.php`, installed from `bootstrap.php` before the
+  database or session so a failure in either still reports properly. Every error is logged with a
+  short reference (`AL-XXXXXX`) that also appears on screen, so a user's screenshot can be found
+  in the log. It renders HTML or JSON to match the request. Non-fatal PHP notices are collected
+  and shown in a panel at the foot of the page rather than left for nobody to read.
+  - **`APP_DEBUG=1`** in `.env` shows the actual reason to *everyone* (set for the soft launch,
+    2026-08-21). With it off, admins still see full detail and others get the reference only.
+    Errors are logged either way — set it to `0` once the launch settles.
+  - **Front-end errors** are caught by `assets/js/errors.js` (loaded first, so it sees failures in
+    every later script), shown to the user in a dismissible banner, and POSTed to
+    `/api/client-error` so browser-side failures land in the same container log.
 - **PHP error display is off, logging on** (set in the Containerfile). The stock base image ships
   the development defaults, which both leak warnings into the page and break error handling: a
   startup warning prints before any app code runs, flushing the headers and pinning the response
-  to 200, so a rejected request reports as a success. Other apps on this host still run the stock
-  defaults.
+  to 200, so a rejected request reports as a success. That is why reporting is done by the app
+  rather than by `display_errors`. Other apps on this host still run the stock defaults.
 - **Images** are re-encoded through GD on upload — that drops EXIF and any embedded payload, so a
   polyglot file cannot survive. Two derivatives per image: display (≤2400px) and thumb (≤600px).
 - **Image storage is pluggable** (`ImageStore` in `src/images.php`): `local` (default) writes to the

@@ -674,6 +674,58 @@ input[type="file"] { font-size: 13px; color: var(--muted); }
 .editor-shell .ql-editor.ql-blank::before { color: #b0a898; font-style: normal; }
 .editor-shell .ql-editor iframe { width: 100%; aspect-ratio: 16/9; height: auto; border-radius: 6px; }
 
+/* ── ERROR REPORTING (soft launch) ──────────────────────────────────────── */
+
+.al-toasts {
+    position: fixed; bottom: 18px; right: 18px; z-index: 400;
+    display: flex; flex-direction: column; gap: 10px;
+    max-width: min(420px, calc(100vw - 36px));
+}
+.al-toast {
+    background: #fff; border: 1px solid #edcecb; border-left: 4px solid var(--danger);
+    border-radius: 6px; box-shadow: 0 10px 30px rgba(6,23,38,0.22);
+    padding: 12px 14px; font-size: 13.5px; color: var(--text);
+    animation: al-toast-in 0.18s ease;
+}
+.al-toast.is-warn { border-left-color: var(--gold); border-color: #ecd9b6; }
+@keyframes al-toast-in { from { opacity: 0; transform: translateY(8px); } }
+.al-toast-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    font-weight: 700; color: var(--danger); line-height: 1.35;
+}
+.al-toast.is-warn .al-toast-head { color: #7a5a22; }
+.al-toast-head button {
+    background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1;
+    color: var(--muted); padding: 0 2px; flex-shrink: 0;
+}
+.al-toast-head button:hover { color: var(--text); }
+.al-toast-detail {
+    margin: 6px 0 0; color: var(--muted); line-height: 1.5;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+    overflow-wrap: break-word;
+}
+
+/* Non-fatal PHP notices, surfaced while error detail is enabled. */
+.debug-panel {
+    background: #2b2a28; color: #e8e3d8; font-size: 12.5px;
+    padding: 12px 20px; line-height: 1.5;
+}
+.debug-panel-head {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    font-weight: 700; color: #f0c674; margin-bottom: 8px;
+}
+.debug-panel-head span { font-weight: 400; color: #9a948a; font-size: 11.5px; }
+.debug-panel-head button {
+    margin-left: auto; background: none; border: 1px solid #55524c; color: #c9c3b8;
+    border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 11.5px; font-family: inherit;
+}
+.debug-panel-head button:hover { border-color: #9a948a; color: #fff; }
+.debug-panel ul { margin: 0; padding-left: 18px; }
+.debug-panel li { margin-bottom: 4px; }
+.debug-panel li span {
+    color: #9a948a; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px;
+}
+
 /* ── RESPONSIVE ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1040px) {

@@ -58,15 +58,20 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
                 body: body.toString()
             })
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.ok) { return window.AL_ERRORS.fromResponse(r, 'Could not save the new order'); }
+                    return r.json();
+                })
                 .then(function (d) {
                     list.classList.remove('is-saving');
-                    if (!d.ok) { throw new Error(d.error || 'failed'); }
+                    if (!d.ok) { throw new Error(d.error || 'Could not save the new order'); }
                     flashOrder(list, 'Order saved');
                 })
-                .catch(function () {
+                .catch(function (err) {
                     list.classList.remove('is-saving');
-                    flashOrder(list, 'Could not save the new order — reload and try again.', true);
+                    var msg = (err && err.message) || 'Could not save the new order';
+                    window.AL_ERRORS.fail('Could not save the new order', err);
+                    flashOrder(list, msg, true);
                 });
         }
 

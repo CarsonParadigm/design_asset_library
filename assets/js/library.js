@@ -114,7 +114,10 @@
         renderChips();
 
         fetch(apiUrl(), { headers: { 'Accept': 'application/json' } })
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                if (!r.ok) { return window.AL_ERRORS.fromResponse(r, 'Could not load assets'); }
+                return r.json();
+            })
             .then(function (data) {
                 // A slower earlier request must not overwrite a newer result.
                 if (seq !== fetchSeq) { return; }
@@ -123,10 +126,11 @@
                     countEl.textContent = data.total + (data.total === 1 ? ' asset' : ' assets');
                 }
             })
-            .catch(function () {
+            .catch(function (err) {
                 if (seq !== fetchSeq) { return; }
-                grid.innerHTML = '<div class="empty-state"><h3>Couldn’t load assets</h3>'
-                    + '<p>Check your connection and try again.</p></div>';
+                window.AL_ERRORS.fail('Could not load assets', err);
+                grid.innerHTML = '<div class="empty-state"><h3>Couldn\u2019t load assets</h3>'
+                    + '<p>' + String((err && err.message) || 'Unknown error') + '</p></div>';
             });
     }
 
@@ -222,15 +226,17 @@
 
         fetch(BASE + '/api/asset/' + encodeURIComponent(slug), { headers: { 'Accept': 'application/json' } })
             .then(function (r) {
-                if (!r.ok) { throw new Error('not found'); }
+                if (!r.ok) { return window.AL_ERRORS.fromResponse(r, 'This asset could not be opened'); }
                 return r.json();
             })
             .then(function (a) { openModal(a, pushUrl); })
-            .catch(function () {
+            .catch(function (err) {
+                var msg = (err && err.message) || 'This asset may have been removed.';
+                window.AL_ERRORS.report({ kind: 'handled', message: 'open asset: ' + msg });
                 modalPanel.innerHTML =
                     '<div class="modal-head"><div><h2 class="modal-title">Asset unavailable</h2></div>'
                   + '<button type="button" class="modal-close" aria-label="Close">&times;</button></div>'
-                  + '<div class="modal-loading">This asset may have been removed.</div>';
+                  + '<div class="modal-loading">' + msg + '</div>';
             });
     }
 

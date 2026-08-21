@@ -22,12 +22,17 @@ define('BASE_PATH', rtrim(getenv('APP_BASE_PATH') ?: '/asset-library', '/'));
 define('UPLOAD_DIR', APP_ROOT . '/data/uploads');
 define('UPLOAD_URL', BASE_PATH . '/data/uploads');
 
+require APP_ROOT . '/src/errors.php';
 require APP_ROOT . '/src/version.php';
 require APP_ROOT . '/src/helpers.php';
 require APP_ROOT . '/src/auth.php';
 require APP_ROOT . '/src/images.php';
 require APP_ROOT . '/src/schema.php';
 require APP_ROOT . '/src/repo.php';
+
+// Installed before the database or session so a failure in either is reported properly
+// rather than surfacing as a blank page.
+errors_install();
 
 /**
  * Parse the gitignored .env (KEY=VALUE, # comments). Kept deliberately tiny — this app has no
@@ -123,7 +128,14 @@ if (!poh_is_authenticated()) {
  * next thing to fail is the CSRF check — which would tell the user their session expired and
  * send them off clearing cookies instead of shrinking their upload.
  */
+$ctype = strtolower($_SERVER['CONTENT_TYPE'] ?? '');
+// PHP only populates $_POST for these two content types, so an empty $_POST means nothing at
+// all for a JSON body — checking without this would reject every JSON request as oversized.
+$phpParsesBody = str_contains($ctype, 'multipart/form-data')
+    || str_contains($ctype, 'application/x-www-form-urlencoded');
+
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && $phpParsesBody
     && empty($_POST) && empty($_FILES)
     && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0
 ) {
